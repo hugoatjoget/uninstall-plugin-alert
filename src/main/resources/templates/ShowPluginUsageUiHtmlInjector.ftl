@@ -112,7 +112,7 @@
                     // Each app name links straight to its App Composer
                     // builders page (needs both id and version to build that
                     // URL) so an admin can jump right into the app.
-                    message = 'Apps using this plugin:<ol class="show-usages-list" style="text-align:left;">';
+                    message = 'Published apps using this plugin:<ol class="show-usages-list" style="text-align:left;">';
                     for (var i = 0; i < plugins.length; i++) {
                         var builderUrl = '/jw/web/console/app/' + encodeURIComponent(ids[i]) + '/' + encodeURIComponent(versions[i]) + '/builders';
                         message += '<li><a href="' + builderUrl + '" target="_blank" rel="noopener">' + plugins[i] + '</a></li>';

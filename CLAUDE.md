@@ -43,7 +43,13 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
 
 - **Dependency-detection flow** (the core logic, in `getPublishedApps`):
   1. Resolve each selected plugin class to its jar filename via `PluginManager.getJarFileName()`.
-  2. Query `app_app` directly (raw JDBC against the `setupDataSource` bean) for all `published = 1` apps.
+  2. Get all published apps via `AppDefinitionDao.findPublishedApps("name", Boolean.FALSE, null, null)`
+     (bean `appDefinitionDao`) — the same core DAO method used by Joget's own governance health checks
+     (e.g. `MissingPluginCheck`) for this exact "scan every published app" pattern. It already filters to
+     `published = true` and returns full `AppDefinition` entities, so no separate `appService.getAppDefinition()`
+     lookup per row is needed. This replaced an earlier raw-JDBC version that queried `app_app` directly
+     against the `setupDataSource` bean — that bean is the setup/profile datasource, not necessarily the
+     tenant's app datasource, so the DAO call is also more correct under multi-tenancy.
   3. For each published app, load its bundled plugin jars via `AppDevUtil.getPluginJarList(appDef)` (the
      same mechanism used by app export).
   4. Compare jar names after **normalizing** them (`normalizeJarName`: strip `.jar`, Windows `(n)` copy
@@ -51,12 +57,12 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
      the app differs in version from the jar being uninstalled.
   5. Any app with a matching jar is added to the result set as `{"id": appId, "name": appName, "version": appVersion}`.
 
-  There is a large commented-out alternate approach (`executeQery` + `getSql`) that instead searched for the
-  plugin class name via `LIKE '%class%'` across JSON/property columns in `app_builder`, `app_form`,
-  `app_datalist`, `app_userview`, `app_plugin_default`, `app_resource`, `app_package_activity_plugin`, and
-  `app_package_participant`. This was abandoned in favor of the jar-comparison approach above — keep that in
-  mind before reviving it (it doesn't handle the version-suffix problem `normalizeJarName` solves, but it
-  does inspect actual usage sites rather than just "jar is bundled with the app").
+  An earlier alternate approach searched for the plugin class name via `LIKE '%class%'` across JSON/property
+  columns in `app_builder`, `app_form`, `app_datalist`, `app_userview`, `app_plugin_default`, `app_resource`,
+  `app_package_activity_plugin`, and `app_package_participant`, instead of comparing bundled jars. It was
+  abandoned in favor of the jar-comparison approach above (it doesn't handle the version-suffix problem
+  `normalizeJarName` solves, though it does inspect actual usage sites rather than just "jar is bundled with
+  the app") and has since been removed from the source rather than kept commented out.
 
 - **`templates/UninstallPluginAlertUiHtmlInjector.ftl`** — the injected `<script>`. Shows a `UI.showConsoleToast`
   loading toast while the web service call is in flight (checking usage across all published apps can take a
