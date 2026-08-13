@@ -5,11 +5,16 @@
         background-color: #f5f5f5;
     }
 
-    /* A site-wide stylesheet forces "list-style: disc !important" on every
-       <li> inside any SweetAlert2 popup's .swal2-html-container (they're all
-       wrapped in .dialog-swal-popup), which stomps our <ol>'s numbering.
-       Match/exceed that selector's specificity to win regardless of CSS
-       source order, and make the app links visually read as clickable. */
+    /* A site-wide stylesheet forces "list-style: disc !important" (or, for
+       plain Swal.fire() popups with no customClass like this one, some other
+       equally-!important reset) on every <li> inside a SweetAlert2 popup's
+       .swal2-html-container, which stomps our <ol>'s numbering. List several
+       selectors of increasing specificity for the same declaration - each is
+       evaluated independently per matching element, so this only adds
+       coverage against whichever exact ancestor structure this particular
+       popup turns out to have, without risking anything already working. */
+    .show-usages-list li,
+    .swal2-html-container .show-usages-list li,
     .dialog-swal-popup .swal2-html-container .show-usages-list li {
         list-style: decimal !important;
     }
