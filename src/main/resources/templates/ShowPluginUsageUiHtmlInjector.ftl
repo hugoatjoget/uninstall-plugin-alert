@@ -56,34 +56,43 @@
         // Rows in this popup currently have no click behavior of their own
         // (see PluginJsonController#pluginListBundlePlugins), so this doesn't
         // conflict with anything else on the page.
-        var hasToast = (typeof UI !== 'undefined' && typeof UI.showConsoleToast === 'function');
+        //
+        // This popup's lighter layout turned out to not load Joget's UI.js
+        // helpers at all (UI.showConsoleToast never appeared, confirmed by
+        // live testing), even though SweetAlert2 itself is available here
+        // (the result dialog renders fine) - so the loading indicator is
+        // built entirely on Swal's own built-in loading state instead of
+        // UI.showConsoleToast, matching what this page actually has rather
+        // than what we assumed it might have.
         var hasSwal = (typeof Swal !== 'undefined');
 
         // Checking a single class resolves far faster than
         // UninstallPluginAlert's "scan every selected jar against every
-        // published app" case (that one's toast is naturally visible because
-        // the request itself takes seconds) - a fast response here could
-        // otherwise remove the toast div before its 100ms fade-in even
-        // finishes, so it would never actually be seen. Enforce a minimum
-        // display time instead of removing it the instant the AJAX call
-        // resolves.
-        var TOAST_MIN_VISIBLE_MS = 600;
-        var toastShownAt = null;
-        if (hasToast) {
-            UI.showConsoleToast(0, 'Checking for plugin usage, please wait...', 'fas fa-spinner fa-spin', 10000, $('body'));
-            toastShownAt = Date.now();
+        // published app" case - enforce a minimum display time so the
+        // loading state is still perceptible even on a near-instant response,
+        // instead of Swal replacing it before the transition is even visible.
+        var LOADING_MIN_VISIBLE_MS = 600;
+        var loadingShownAt = null;
+        if (hasSwal) {
+            Swal.fire({
+                title: 'Checking for plugin usage, please wait...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: function () {
+                    Swal.showLoading();
+                }
+            });
+            loadingShownAt = Date.now();
         }
 
-        function closeToastThen(callback) {
-            if (!hasToast) {
+        function afterMinimumLoadingTime(callback) {
+            if (!hasSwal) {
                 callback();
                 return;
             }
-            var remaining = TOAST_MIN_VISIBLE_MS - (Date.now() - toastShownAt);
-            setTimeout(function () {
-                $('.toast#toast-0').remove();
-                callback();
-            }, Math.max(remaining, 0));
+            var remaining = LOADING_MIN_VISIBLE_MS - (Date.now() - loadingShownAt);
+            setTimeout(callback, Math.max(remaining, 0));
         }
 
         // Reuse the usage-detection web service already exposed by
@@ -112,8 +121,11 @@
                 } else {
                     message = 'No published apps are currently using this plugin.';
                 }
-                closeToastThen(function () {
+                afterMinimumLoadingTime(function () {
                     if (hasSwal) {
+                        // Calling Swal.fire() again while the loading popup is
+                        // still open replaces it with this new content - no
+                        // manual teardown of the loading state needed.
                         Swal.fire({
                             icon: 'info',
                             title: 'Show Usages',
@@ -126,8 +138,17 @@
                 });
             },
             error: function () {
-                closeToastThen(function () {
-                    alert('Failed to check plugin usage. Please try again.');
+                afterMinimumLoadingTime(function () {
+                    if (hasSwal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Failed to check plugin usage',
+                            text: 'Please try again.',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        alert('Failed to check plugin usage. Please try again.');
+                    }
                 });
             }
         });
