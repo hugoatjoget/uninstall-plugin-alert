@@ -1,3 +1,17 @@
+<style>
+    /* A site-wide stylesheet forces "list-style: disc !important" on every
+       <li> inside any SweetAlert2 popup's .swal2-html-container (they're all
+       wrapped in .dialog-swal-popup), which stomps our <ol>'s numbering.
+       Match/exceed that selector's specificity to win regardless of CSS
+       source order, and make the app links visually read as clickable. */
+    .dialog-swal-popup .swal2-html-container .show-usages-list li {
+        list-style: decimal !important;
+    }
+    .show-usages-list a {
+        color: #1677ff !important;
+        text-decoration: underline;
+    }
+</style>
 <script>
     window.uninstall = function(selectedList) {
         console.log(selectedList);
@@ -22,7 +36,7 @@
                 // Each app name links straight to its App Composer builders
                 // page (needs both id and version to build that URL), so an
                 // admin can go check the app before deciding to proceed.
-                message += '<br><br>There are apps using this plugin(s):<ol style="text-align:left;">';
+                message += '<br><br>There are apps using this plugin(s):<ol class="show-usages-list" style="text-align:left;">';
                 for (var i = 0; i < plugins.length; i++) {
                     var builderUrl = '/jw/web/console/app/' + encodeURIComponent(ids[i]) + '/' + encodeURIComponent(versions[i]) + '/builders';
                     message += '<li><a href="' + builderUrl + '" target="_blank" rel="noopener">' + plugins[i] + '</a></li>';
