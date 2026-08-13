@@ -15,7 +15,7 @@ use a given plugin's jar.
 mvn clean install
 ```
 
-Produces an OSGi bundle jar (via `maven-bundle-plugin`) at `target/uninstall-plugin-alert-9.1.0.jar`, to be
+Produces an OSGi bundle jar (via `maven-bundle-plugin`) at `target/uninstall-plugin-alert-9.1.1.jar`, to be
 dropped into a Joget DX `wflow/app_plugins` directory.
 
 Requires the `wflow-core` artifact (version `9.1-SNAPSHOT`, scope `provided`) to be resolvable — this is the
@@ -71,7 +71,7 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
   dialog (the same SweetAlert2-based modal used for "Are you sure to unpublish this App?") before continuing
   with the real uninstall POST to `/web/console/setting/plugin/uninstall`. `UI.confirm`/`UI.showConsoleToast`
   require Joget 9.1+ (SweetAlert2 was introduced in 9.1) — this is why the plugin's baseline version is
-  9.1.0, not 8.2.
+  9.1.x, not 8.2.
 
 - **`ShowPluginUsage`** — a second `UiHtmlInjectorPluginAbstract`, scoped to
   `/web/console/setting/plugin/details`. That's a *different* URL from the main plugin list
@@ -97,8 +97,9 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
 - The `Import-Package` / `Export-Package` / `Bundle-Activator` OSGi instructions in `pom.xml` are meant to be
   edited per-plugin ("Change package and plugin class here" comment) — if cloning this as a template for a
   different plugin, update `Bundle-Activator` and trim `Import-Package` to only what's actually used.
-- `getVersion()` in `UninstallPluginAlert.java` and the Maven `<version>` should be kept in sync (both
-  currently `9.1.0`). Convention for this plugin family is to set the version to the *lowest* Joget major.minor
-  the plugin actually requires — 9.1.0 here because `UI.confirm`/`UI.showConsoleToast` (SweetAlert2) need 9.1+.
+- `getVersion()` in `UninstallPluginAlert.java`/`ShowPluginUsage.java` and the Maven `<version>` should be kept
+  in sync (all currently `9.1.1`). Convention for this plugin family is to set the major.minor to the *lowest*
+  Joget major.minor the plugin actually requires — 9.1 here because `UI.confirm`/`UI.showConsoleToast`/
+  `Swal.fire` (SweetAlert2) need 9.1+ — and bump the patch digit for subsequent releases.
 - README.md / CODE_OF_CONDUCT.md are unmodified JogetOSS `repo-template` boilerplate, not specific to this
   plugin's behavior.
