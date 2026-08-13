@@ -1,7 +1,10 @@
 # Description
 
-This repository is meant to serve as a general template for how to set up new repositories in the JogetOSS organization. 
+Uninstall Plugin Alert is a UI Html Injector plugin to alert users the plugin is being used in which app before uninstalling.
 
+<img width="999" height="447" alt="image" src="https://github.com/user-attachments/assets/b842b672-ea04-4b66-9971-8bbde290e454" />
+
+                    
 # Getting Help
 
 JogetOSS is a community-led team for open source software related to the [Joget](https://www.joget.org) no-code/low-code application platform.
