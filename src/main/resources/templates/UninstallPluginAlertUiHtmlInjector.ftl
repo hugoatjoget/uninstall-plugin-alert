@@ -15,13 +15,19 @@
             success: function (response) {
               $('.toast#toast-0').remove();
               var plugins = response.names || []; // already an array
+              var ids = response.ids || [];
+              var versions = response.versions || [];
               var message = 'Are you sure you want to uninstall the selected Plugin(s)?';
               if (plugins.length > 0) {
-                message += '<br><br>There are apps using this plugin(s):<ul style="text-align:left;">';
+                // Each app name links straight to its App Composer builders
+                // page (needs both id and version to build that URL), so an
+                // admin can go check the app before deciding to proceed.
+                message += '<br><br>There are apps using this plugin(s):<ol style="text-align:left;">';
                 for (var i = 0; i < plugins.length; i++) {
-                    message += '<li>' + plugins[i] + '</li>';
+                    var builderUrl = '/jw/web/console/app/' + encodeURIComponent(ids[i]) + '/' + encodeURIComponent(versions[i]) + '/builders';
+                    message += '<li><a href="' + builderUrl + '" target="_blank" rel="noopener">' + plugins[i] + '</a></li>';
                 }
-                message += '</ul>';
+                message += '</ol>';
               }
               // console.log(decodeURIComponent(response.jars));
               UI.confirm(message, function() {

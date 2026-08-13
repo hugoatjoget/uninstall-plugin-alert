@@ -36,8 +36,10 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
      the page's global `window.uninstall(selectedList)` JS function to intercept the uninstall action.
   2. **Web service** (`webService`), reachable at
      `/web/json/plugin/org.joget.marketplace.UninstallPluginAlert/service`: takes a POSTed
-     `{selectedList: [...]}` of plugin class names, and returns `{ids, names, jars}` describing which
-     published apps depend on those plugins' jars.
+     `{selectedList: [...]}` of plugin class names, and returns `{ids, names, versions, jars}` (all
+     but `jars` are parallel arrays indexed by app) describing which published apps depend on those
+     plugins' jars. `versions` is included specifically so the FTLs can link each app name straight to
+     its App Composer builders page (`/web/console/app/{id}/{version}/builders`), which needs both.
 
 - **Dependency-detection flow** (the core logic, in `getPublishedApps`):
   1. Resolve each selected plugin class to its jar filename via `PluginManager.getJarFileName()`.
@@ -47,7 +49,7 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
   4. Compare jar names after **normalizing** them (`normalizeJarName`: strip `.jar`, Windows `(n)` copy
      suffixes, and version/SNAPSHOT/qualifier suffixes) — so a match isn't missed just because the jar in
      the app differs in version from the jar being uninstalled.
-  5. Any app with a matching jar is added to the result set (`appId` → `appName`).
+  5. Any app with a matching jar is added to the result set as `{"id": appId, "name": appName, "version": appVersion}`.
 
   There is a large commented-out alternate approach (`executeQery` + `getSql`) that instead searched for the
   plugin class name via `LIKE '%class%'` across JSON/property columns in `app_builder`, `app_form`,
@@ -58,10 +60,12 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
 
 - **`templates/UninstallPluginAlertUiHtmlInjector.ftl`** — the injected `<script>`. Shows a `UI.showConsoleToast`
   loading toast while the web service call is in flight (checking usage across all published apps can take a
-  few seconds), then builds an HTML bullet list of dependent app names and shows a `UI.confirm` dialog (the
-  same SweetAlert2-based modal used for "Are you sure to unpublish this App?") before continuing with the
-  real uninstall POST to `/web/console/setting/plugin/uninstall`. `UI.confirm`/`UI.showConsoleToast` require
-  Joget 9.1+ (SweetAlert2 was introduced in 9.1) — this is why the plugin's baseline version is 9.1.0, not 8.2.
+  few seconds), then builds an HTML numbered list of dependent app names — each one a link to that app's
+  builders page (`/web/console/app/{id}/{version}/builders`, opened in a new tab) — and shows a `UI.confirm`
+  dialog (the same SweetAlert2-based modal used for "Are you sure to unpublish this App?") before continuing
+  with the real uninstall POST to `/web/console/setting/plugin/uninstall`. `UI.confirm`/`UI.showConsoleToast`
+  require Joget 9.1+ (SweetAlert2 was introduced in 9.1) — this is why the plugin's baseline version is
+  9.1.0, not 8.2.
 
 - **`ShowPluginUsage`** — a second `UiHtmlInjectorPluginAbstract`, scoped to
   `/web/console/setting/plugin/details`. That's a *different* URL from the main plugin list
@@ -76,7 +80,8 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
     enough to know which plugin class was clicked, no extra server round-trip needed to resolve it.
   - Rather than duplicating the usage-detection logic, it POSTs `{selectedList: [<one class>]}` straight to
     `UninstallPluginAlert`'s existing web service and renders the result via `Swal.fire` (a plain info dialog,
-    not `UI.confirm` — there's no "confirm/cancel" semantics here, it's just a lookup).
+    not `UI.confirm` — there's no "confirm/cancel" semantics here, it's just a lookup), with the same
+    numbered-list-of-linked-apps rendering as `UninstallPluginAlertUiHtmlInjector.ftl`.
   - This popup is rendered via `commons:popupHeader`/`popupFooter` tags, a lighter layout than the main
     console shell, so the FTL feature-detects `UI`/`Swal` before using them and falls back to `alert()` if
     they aren't loaded on that page.

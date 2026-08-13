@@ -104,17 +104,18 @@ public class UninstallPluginAlert extends UiHtmlInjectorPluginAbstract implement
 
         List<String> appIds = new ArrayList<>();
         List<String> appNames = new ArrayList<>();
+        List<String> appVersions = new ArrayList<>();
 
         for (Map<String, String> map : apps) {
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                appIds.add(entry.getKey());    
-                appNames.add(entry.getValue()); 
-            }
+            appIds.add(map.get("id"));
+            appNames.add(map.get("name"));
+            appVersions.add(map.get("version"));
         }
-        
+
         Map<String, Object> jsonOutput = new HashMap<>();
         jsonOutput.put("ids", appIds);
         jsonOutput.put("names", appNames);
+        jsonOutput.put("versions", appVersions);
         jsonOutput.put("jars", jarFiles);
 
         PrintWriter out = response.getWriter();
@@ -140,8 +141,9 @@ public class UninstallPluginAlert extends UiHtmlInjectorPluginAbstract implement
                 // Get columns by name
                 String appId = rs.getString("appId");
                 String appName = rs.getString("name");
+                String appVersion = rs.getString("appVersion");
                 AppService appService = (AppService) AppUtil.getApplicationContext().getBean("appService");
-                AppDefinition appDef = appService.getAppDefinition(appId, rs.getString("appVersion"));
+                AppDefinition appDef = appService.getAppDefinition(appId, appVersion);
                 Collection<String> appPlugins = AppDevUtil.getPluginJarList(appDef);
                 LogUtil.info(getClassName(), appId + " plugins are " + appPlugins.toString());
                 // check for matches without looking at jar file versions
@@ -155,10 +157,12 @@ public class UninstallPluginAlert extends UiHtmlInjectorPluginAbstract implement
                 // Set<String> matches = appPlugins.stream()
                 //         .filter(jarFiles::contains)
                 //         .collect(Collectors.toSet());
-                Map<String, String> appIdName = new HashMap<>();
                 if (!matches.isEmpty()){
-                    appIdName.put(appId, appName);
-                    apps.add(appIdName);
+                    Map<String, String> appInfo = new HashMap<>();
+                    appInfo.put("id", appId);
+                    appInfo.put("name", appName);
+                    appInfo.put("version", appVersion);
+                    apps.add(appInfo);
                 }
             }
 

@@ -78,13 +78,19 @@
             data: JSON.stringify({ selectedList: [pluginClass] }),
             success: function (response) {
                 var plugins = response.names || [];
+                var ids = response.ids || [];
+                var versions = response.versions || [];
                 var message;
                 if (plugins.length > 0) {
-                    message = 'Apps using this plugin:<ul style="text-align:left;">';
+                    // Each app name links straight to its App Composer
+                    // builders page (needs both id and version to build that
+                    // URL) so an admin can jump right into the app.
+                    message = 'Apps using this plugin:<ol style="text-align:left;">';
                     for (var i = 0; i < plugins.length; i++) {
-                        message += '<li>' + plugins[i] + '</li>';
+                        var builderUrl = '/jw/web/console/app/' + encodeURIComponent(ids[i]) + '/' + encodeURIComponent(versions[i]) + '/builders';
+                        message += '<li><a href="' + builderUrl + '" target="_blank" rel="noopener">' + plugins[i] + '</a></li>';
                     }
-                    message += '</ul>';
+                    message += '</ol>';
                 } else {
                     message = 'No published apps are currently using this plugin.';
                 }
