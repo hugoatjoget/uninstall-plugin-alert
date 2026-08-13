@@ -97,9 +97,12 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
 - The `Import-Package` / `Export-Package` / `Bundle-Activator` OSGi instructions in `pom.xml` are meant to be
   edited per-plugin ("Change package and plugin class here" comment) — if cloning this as a template for a
   different plugin, update `Bundle-Activator` and trim `Import-Package` to only what's actually used.
-- `getVersion()` in `UninstallPluginAlert.java`/`ShowPluginUsage.java` and the Maven `<version>` should be kept
-  in sync (all currently `9.1.1`). Convention for this plugin family is to set the major.minor to the *lowest*
-  Joget major.minor the plugin actually requires — 9.1 here because `UI.confirm`/`UI.showConsoleToast`/
-  `Swal.fire` (SweetAlert2) need 9.1+ — and bump the patch digit for subsequent releases.
+- The version lives in exactly one place: `pom.xml`'s `<version>`. `maven-bundle-plugin` turns that into the
+  OSGi `Bundle-Version` manifest entry, and `Activator.getBundleVersion()` reads it back at runtime via
+  `FrameworkUtil.getBundle(Activator.class).getVersion()` — both `UninstallPluginAlert.getVersion()` and
+  `ShowPluginUsage.getVersion()` just return that, so there's nothing to hand-sync on a release. Convention
+  for this plugin family is to set the major.minor to the *lowest* Joget major.minor the plugin actually
+  requires — 9.1 here because `UI.confirm`/`UI.showConsoleToast`/`Swal.fire` (SweetAlert2) need 9.1+ — and
+  bump only the patch digit in `pom.xml` for subsequent releases.
 - README.md / CODE_OF_CONDUCT.md are unmodified JogetOSS `repo-template` boilerplate, not specific to this
   plugin's behavior.

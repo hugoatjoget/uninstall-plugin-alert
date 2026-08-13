@@ -27,7 +27,7 @@ public class ShowPluginUsage extends UiHtmlInjectorPluginAbstract {
 
     @Override
     public String getVersion() {
-        return "9.1.1";
+        return Activator.getBundleVersion();
     }
 
     @Override

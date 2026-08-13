@@ -39,7 +39,7 @@ public class UninstallPluginAlert extends UiHtmlInjectorPluginAbstract implement
 
     @Override
     public String getVersion() {
-        return "9.1.1";
+        return Activator.getBundleVersion();
     }
 
     @Override
