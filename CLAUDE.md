@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A Joget DX plugin (OSGi bundle) that guards against accidentally uninstalling a plugin that a published
-app still depends on. It injects JS into the Plugin Manager page and exposes a JSON web service that
-checks which published apps use the plugin(s) selected for uninstall, so the admin sees a confirmation
-dialog listing the affected apps before the uninstall proceeds.
+app still depends on, and lets admins proactively look up plugin usage from the Plugin Manager page. It
+injects JS into two Plugin Manager pages and exposes a JSON web service that checks which published apps
+use a given plugin's jar.
 
 ## Build
 
@@ -26,8 +26,8 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
 
 ## Architecture
 
-- **`Activator`** — OSGi `BundleActivator`. Registers a single service: `UninstallPluginAlert`. This is the
-  only extension point wired up; if adding new plugin classes they must be registered here too.
+- **`Activator`** — OSGi `BundleActivator`. Registers two services: `UninstallPluginAlert` and
+  `ShowPluginUsage`. Any new plugin class added to this bundle must be registered here too.
 
 - **`UninstallPluginAlert`** — extends `UiHtmlInjectorPluginAbstract` and implements `PluginWebSupport`, so it
   does two distinct jobs from one class:
@@ -62,6 +62,24 @@ There are no unit tests (surefire is configured with `skipTests=true`); there's 
   same SweetAlert2-based modal used for "Are you sure to unpublish this App?") before continuing with the
   real uninstall POST to `/web/console/setting/plugin/uninstall`. `UI.confirm`/`UI.showConsoleToast` require
   Joget 9.1+ (SweetAlert2 was introduced in 9.1) — this is why the plugin's baseline version is 9.1.0, not 8.2.
+
+- **`ShowPluginUsage`** — a second `UiHtmlInjectorPluginAbstract`, scoped to
+  `/web/console/setting/plugin/details`. That's a *different* URL from the main plugin list
+  (`/web/console/setting/plugin`): it's the page Joget loads inside an iframe popup when you click a bundle
+  row in the "Installed Plugins" table, showing the individual plugin classes registered inside that OSGi
+  bundle (`PluginManager.listBundlePlugins`). Because Joget's `AppUtil.getInjectionHtml()` matches injection
+  URL patterns with exact/Ant-style matching (not prefix matching), this popup needs its own injector — it
+  won't pick up patterns registered against the main list page.
+  - `templates/ShowPluginUsageUiHtmlInjector.ftl` binds a click handler on that popup's table rows. Joget's
+    own `ui.js` gives each row an `id` of `"row" + <fully-qualified class name, dots replaced with "__dot__">`
+    (this is also how the existing `uninstall()` checkbox flow recovers class names) — reading `this.id` is
+    enough to know which plugin class was clicked, no extra server round-trip needed to resolve it.
+  - Rather than duplicating the usage-detection logic, it POSTs `{selectedList: [<one class>]}` straight to
+    `UninstallPluginAlert`'s existing web service and renders the result via `Swal.fire` (a plain info dialog,
+    not `UI.confirm` — there's no "confirm/cancel" semantics here, it's just a lookup).
+  - This popup is rendered via `commons:popupHeader`/`popupFooter` tags, a lighter layout than the main
+    console shell, so the FTL feature-detects `UI`/`Swal` before using them and falls back to `alert()` if
+    they aren't loaded on that page.
 
 ## Conventions specific to this plugin template
 

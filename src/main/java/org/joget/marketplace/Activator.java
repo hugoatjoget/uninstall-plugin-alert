@@ -15,6 +15,7 @@ public class Activator implements BundleActivator {
 
         //Register plugin here
         registrationList.add(context.registerService(UninstallPluginAlert.class.getName(), new UninstallPluginAlert(), null));
+        registrationList.add(context.registerService(ShowPluginUsage.class.getName(), new ShowPluginUsage(), null));
     }
 
     public void stop(BundleContext context) {
