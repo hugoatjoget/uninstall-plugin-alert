@@ -41,8 +41,31 @@
         var hasToast = (typeof UI !== 'undefined' && typeof UI.showConsoleToast === 'function');
         var hasSwal = (typeof Swal !== 'undefined');
 
+        // Checking a single class resolves far faster than
+        // UninstallPluginAlert's "scan every selected jar against every
+        // published app" case (that one's toast is naturally visible because
+        // the request itself takes seconds) - a fast response here could
+        // otherwise remove the toast div before its 100ms fade-in even
+        // finishes, so it would never actually be seen. Enforce a minimum
+        // display time instead of removing it the instant the AJAX call
+        // resolves.
+        var TOAST_MIN_VISIBLE_MS = 600;
+        var toastShownAt = null;
         if (hasToast) {
             UI.showConsoleToast(0, 'Checking for plugin usage, please wait...', 'fas fa-spinner fa-spin', 10000, $('body'));
+            toastShownAt = Date.now();
+        }
+
+        function closeToastThen(callback) {
+            if (!hasToast) {
+                callback();
+                return;
+            }
+            var remaining = TOAST_MIN_VISIBLE_MS - (Date.now() - toastShownAt);
+            setTimeout(function () {
+                $('.toast#toast-0').remove();
+                callback();
+            }, Math.max(remaining, 0));
         }
 
         // Reuse the usage-detection web service already exposed by
@@ -54,9 +77,6 @@
             dataType: "json",
             data: JSON.stringify({ selectedList: [pluginClass] }),
             success: function (response) {
-                if (hasToast) {
-                    $('.toast#toast-0').remove();
-                }
                 var plugins = response.names || [];
                 var message;
                 if (plugins.length > 0) {
@@ -68,22 +88,23 @@
                 } else {
                     message = 'No published apps are currently using this plugin.';
                 }
-                if (hasSwal) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Show Usages',
-                        html: message,
-                        confirmButtonText: 'OK'
-                    });
-                } else {
-                    alert('Show Usages: ' + pluginClass + '\n\n' + $('<div>').html(message).text());
-                }
+                closeToastThen(function () {
+                    if (hasSwal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Show Usages',
+                            html: message,
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        alert('Show Usages: ' + pluginClass + '\n\n' + $('<div>').html(message).text());
+                    }
+                });
             },
             error: function () {
-                if (hasToast) {
-                    $('.toast#toast-0').remove();
-                }
-                alert('Failed to check plugin usage. Please try again.');
+                closeToastThen(function () {
+                    alert('Failed to check plugin usage. Please try again.');
+                });
             }
         });
     }, true);
